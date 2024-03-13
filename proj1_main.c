@@ -25,6 +25,7 @@ static void PollNonBlockingLED() {
     GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);
   }
 }
+void Display_characters(HAL* hal_p, char rxChar);
 
 /**
  * The main entry point of your project. The main function should immediately
@@ -97,6 +98,9 @@ Application Application_construct() {
  * @param app_p:  A pointer to the main Application object.
  * @param hal_p:  A pointer to the main HAL object
  */
+
+    static int x = 5;
+    static int y = 5;
 void Application_loop(Application* app_p, HAL* hal_p) {
   // Restart/Update communications if either this is the first time the
   // application is run or if BoosterPack S2 is pressed (which means a new
@@ -111,9 +115,29 @@ void Application_loop(Application* app_p, HAL* hal_p) {
 
     char txChar = Application_interpretIncomingChar(rxChar);
 
+    if ((rxChar == 'r') ||(rxChar == 'p')||(rxChar == 's')) {
+        LED_turnOn(&hal_p->boosterpackBlue);
+    }
+
+    char str[2];
+       str[0] = rxChar;
+       str[1] = '\0';
+
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*)str, -1, x, y, true);
+    x +=5;
+    if (x >= 120){
+        y +=10;
+        x = 0;
+    }
+
     // Only send a character if the UART module can send it
     if (UART_canSend(&hal_p->uart)) UART_sendChar(&hal_p->uart, txChar);
   }
+}
+
+
+void Display_characters(HAL* hal_p, char rxChar) {
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*)rxChar, -1, 30, 30, true);
 }
 
 /**
@@ -159,15 +183,20 @@ void Application_updateCommunications(Application* app_p, HAL* hal_p) {
 
     // TODO: When the baud rate is 19200, turn on Launchpad LED Green
     case BAUD_19200:
+        LED_turnOn(&hal_p->launchpadLED2Green);
       break;
 
     // TODO: When the baud rate is 38400, turn on Launchpad LED Blue
     case BAUD_38400:
+        LED_turnOn(&hal_p->launchpadLED2Blue);
       break;
 
     // TODO: When the baud rate is 57600, turn on all Launchpad LEDs
     // (illuminates white)
     case BAUD_57600:
+        LED_turnOn(&hal_p->launchpadLED2Red);
+        LED_turnOn(&hal_p->launchpadLED2Green);
+        LED_turnOn(&hal_p->launchpadLED2Blue);
       break;
 
     // In the default case, this program will do nothing.
@@ -199,6 +228,7 @@ char Application_interpretIncomingChar(char rxChar) {
   if ((rxChar >= 'a' && rxChar <= 'z') || (rxChar >= 'A' && rxChar <= 'Z')) {
     txChar = 'L';
   }
+
 
   return (txChar);
 }

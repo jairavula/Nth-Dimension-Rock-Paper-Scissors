@@ -14,6 +14,8 @@
 #include <HAL/Timer.h>
 #include <HAL/UART.h>
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
+#include <ti/grlib/grlib.h>
+#include "LcdDriver/Crystalfontz128x128_ST7735.h"
 
 /**============================================================================
  * The main HAL struct. This struct encapsulates all of the other input structs
@@ -53,6 +55,8 @@ struct _HAL {
 
   // UART - Construct a new UART instance
   UART uart;
+  // Adds graphics context data structure
+  Graphics_Context g_sContext;
 };
 typedef struct _HAL HAL;
 

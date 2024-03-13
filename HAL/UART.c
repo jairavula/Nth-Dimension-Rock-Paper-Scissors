@@ -37,7 +37,11 @@ UART UART_construct(uint32_t moduleInstance, uint32_t port, uint32_t pins) {
   // struct
   // TODO: all uart config parameters except those related to baudrate
   // generation
-  uart.config.parity = EUSCI_A_UART_NO_PARITY;  // No Parity
+  uart.config.parity = EUSCI_A_UART_NO_PARITY;               // No Parity
+  uart.config.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;        // LSB First
+  uart.config.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;  //One stop bit
+  uart.config.dataLength = EUSCI_A_UART_8_BIT_LEN;           //8-bit data length
+  uart.config.uartMode = EUSCI_A_UART_MODE;                 //UART mode
 
   // Return the completed UART instance
   return uart;
@@ -65,17 +69,21 @@ void UART_SetBaud_Enable(UART* uart_p, UART_Baudrate baudChoice) {
   // without requiring excessive amounts of if-statements.
   // TODO: fill these tables such that they work with the proper baudChoice. The
   // first column is given for 9600 BPS
-  uint32_t clockPrescalerMapping[NUM_BAUD_CHOICES] = {312, 0, 0, 0};
-  uint32_t firstModRegMapping[NUM_BAUD_CHOICES] = {8, 0, 0, 0};
-  uint32_t secondModRegMapping[NUM_BAUD_CHOICES] = {0, 0, 0, 0};
+  uint32_t clockPrescalerMapping[NUM_BAUD_CHOICES] = {312, 156, 78, 52};
+  uint32_t firstModRegMapping[NUM_BAUD_CHOICES] = {8, 4, 2, 1};
+  uint32_t secondModRegMapping[NUM_BAUD_CHOICES] = {0, 0, 0, 0x25};
 
   // TODO: Replace 0s with the correct statement. Use line 71 as your guide
   uart_p->config.clockPrescalar = clockPrescalerMapping[baudChoice];
-  uart_p->config.firstModReg = 0;
-  uart_p->config.secondModReg = 0;
+  uart_p->config.firstModReg = firstModRegMapping[baudChoice];
+  uart_p->config.secondModReg = secondModRegMapping[baudChoice];
 
   // TODO: initialize and enable uart instance (refer to the basic_example_UART
   // project for guidance)
+  UART_initModule(uart_p->moduleInstance, &uart_p->config);
+  UART_enableModule(uart_p->moduleInstance);
+
+
 }
 
 // Not-a-real TODO: read this function and its comment to learn how to implement
@@ -101,9 +109,11 @@ bool UART_hasChar(UART* uart_p) {
 // TODO: Write a descriptive comment explaining HOW the function is implemented.
 //       In the implementation file, prefer explaining HOW the function is
 //       implemented over simply WHAT the function does.
+// Function checks if there is a character to process, if yes, receive
+// the character through the UART connection
 char UART_getChar(UART* uart_p) {
   // TODO: change this
-  return '\0';
+  return UART_receiveData(uart_p->moduleInstance);
 }
 
 // TODO: Complete the UART_canSend() function.
@@ -111,8 +121,10 @@ char UART_getChar(UART* uart_p) {
 //       In the implementation file, prefer explaining HOW the function is
 //       implemented over simply WHAT the function does.
 bool UART_canSend(UART* uart_p) {
-  // TODO: change this
-  return false;
+    uint8_t interruptStatus = UART_getInterruptStatus(
+        uart_p->moduleInstance, EUSCI_A_UART_TRANSMIT_INTERRUPT_FLAG);
+
+    return (interruptStatus == EUSCI_A_UART_TRANSMIT_INTERRUPT_FLAG);
 }
 
 // TODO: Complete the UART_sendChar() function.
@@ -121,6 +133,5 @@ bool UART_canSend(UART* uart_p) {
 //       implemented over simply WHAT the function does.
 void UART_sendChar(UART* uart_p, char c) {
   // TODO: add some lines here
-
-  return;
+  return UART_transmitData(uart_p->moduleInstance, c);
 }

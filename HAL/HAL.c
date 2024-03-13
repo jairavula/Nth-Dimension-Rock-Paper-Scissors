@@ -14,6 +14,28 @@
  *
  * @return a properly constructed API object.
  */
+
+void Init_LCD() {
+    Crystalfontz128x128_Init();
+    Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
+}
+
+// This function initializes the graphics
+void InitGraphics(Graphics_Context *g_sContext_p) {
+
+    Graphics_initContext(g_sContext_p,
+                         &g_sCrystalfontz128x128,
+                         &g_sCrystalfontz128x128_funcs);
+    Graphics_setForegroundColor(g_sContext_p, GRAPHICS_COLOR_WHITE);
+    Graphics_setBackgroundColor(g_sContext_p, GRAPHICS_COLOR_BLACK);
+    Graphics_setFont(g_sContext_p, &g_sFontFixed6x8);
+
+    Init_LCD();
+
+    Graphics_clearDisplay(g_sContext_p);
+}
+
+
 HAL HAL_construct() {
   // The API object which will be returned at the end of construction
   HAL hal;
@@ -53,6 +75,8 @@ HAL HAL_construct() {
   // Construct the UART module inside of this HAL struct
   hal.uart = UART_construct(USB_UART_INSTANCE, USB_UART_PORT, USB_UART_PINS);
 
+  InitGraphics(&hal.g_sContext);
+
   // Enable the UART at 9600 BPS
   // TODO: Call UART_SetBaud_Enable to achieve the above goal
 
@@ -81,3 +105,5 @@ void HAL_refresh(HAL* hal) {
 
   // Not real TODO: No need to add anything for UART
 }
+
+

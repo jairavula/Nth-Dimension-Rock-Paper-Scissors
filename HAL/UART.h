@@ -22,11 +22,9 @@
 // TODO: define these macros based on the UART module that is connected to USB
 // on Launchpad via XDS110
 
-#define USB_UART_PORT 0
-#define USB_UART_PINS \
-  (GPIO_PIN2 | GPIO_PIN3)  // The pins are given to you for guidance. Also,
-                           // because many students miss the parentheses
-#define USB_UART_INSTANCE 0
+#define USB_UART_PORT GPIO_PORT_P1
+#define USB_UART_PINS (GPIO_PIN2 | GPIO_PIN3)  // The pins are given to you for guidance. Also, because many students miss the parentheses
+#define USB_UART_INSTANCE EUSCI_A0_BASE
 
 // An enum outlining what baud rates the UART_construct() function can use in
 // its initialization.
@@ -42,6 +40,20 @@ typedef enum _UART_Baudrate UART_Baudrate;
 // TODO: Write an overview explanation of what this UART struct does, and how it
 //       interacts with the functions below. Consult <HAL/Button.h> and
 //       <HAL/LED.h> for examples on how to do this.
+/**============================================================================
+ *  The UART struct defines a data structure that contains
+ *  information about the unique UART connection we are making.
+ * A UART connection object is defined as the parameters (instance, port, pins)
+ * used in order to identify and access a UART module instance.
+ * The UART_construct function creates a UART object with the specified parameters. The config data member is manipulated/ configured
+ *  with the UART_SetBaud_Enable function to create a consistent communication channel between the transmitter
+ * and receiver.
+ * UART_hasChar: Checks if there is a character available to read from the UART connection (computer)
+ * UART_getChar: Reads the character from the UART connection (computer)
+ * UART_canSend: Checks if a character can be sent from the board to the computer
+ * UART_sendCHAR: Sends character from board to the computer
+============================================================================*/
+
 struct _UART {
   UART_Config config;
 
@@ -61,6 +73,13 @@ void UART_SetBaud_Enable(UART*, UART_Baudrate baudrate);
 // the
 //       header, prefer explaining WHAT the function does, as opposed to HOW it
 //       is implemented.
+
+/*
+ *  UART_hasChar: Checks if there is a character available to read from the UART connection (computer)
+ * UART_getChar: Reads the character from the UART connection (computer)
+ * UART_canSend: Checks if a character can be sent from the board to the computer
+ * UART_sendCHAR: Sends character from board to the computer
+ * */
 bool UART_hasChar(UART* uart_p);
 char UART_getChar(UART* uart_p);
 bool UART_canSend(UART* uart_p);
