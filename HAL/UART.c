@@ -135,3 +135,14 @@ void UART_sendChar(UART* uart_p, char c) {
   // TODO: add some lines here
   return UART_transmitData(uart_p->moduleInstance, c);
 }
+
+void UART_sendString(UART* uart_p, char* string) {
+    UART_sendChar(uart_p, '\r');
+    UART_sendChar(uart_p, '\n');
+    while (*string != '\0') {
+        UART_sendChar(uart_p, *string);
+        string++;
+    }
+}
+
+

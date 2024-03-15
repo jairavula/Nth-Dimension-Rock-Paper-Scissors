@@ -84,6 +84,7 @@ bool UART_hasChar(UART* uart_p);
 char UART_getChar(UART* uart_p);
 bool UART_canSend(UART* uart_p);
 void UART_sendChar(UART* uart_p, char c);
+void UART_sendString(UART* uart_p, char* string);
 
 // Updates the UART baudrate to use the new baud choice.
 void UART_updateBaud(UART* uart_p, UART_Baudrate baudChoice);

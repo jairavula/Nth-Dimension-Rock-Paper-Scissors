@@ -11,7 +11,7 @@
 
 #include <HAL/HAL.h>
 
-typedef enum { titleScreen, settingsScreen, instructionsScreen } _screenState;
+typedef enum { titleScreen, settingsScreen, instructionsScreen, nameSelectScreen, gameScreen } _screenState;
 
 struct _Application {
   // Put your application members and FSM state variables here!
@@ -22,6 +22,31 @@ struct _Application {
 
 struct _Gamesettings {
     _screenState screenState;
+    int numRounds;
+    int numPlayers;
+
+    bool loadTitleScreen;
+    bool loadSettingsScreen;
+    bool loadInstructionsScreen;
+    bool loadNameSelectScreen;
+
+    bool startGame;
+
+    char player1Name[4];
+    char player2Name[4];
+    char player3Name[4];
+    char player4Name[4];
+
+    bool player1Turn;
+    bool player2Turn;
+    bool player3Turn;
+    bool player4Turn;
+
+    char player1Move;
+    char player2Move;
+    char player3Move;
+    char player4Move;
+
 };
 
 typedef struct _Gamesettings Gamesettings;
