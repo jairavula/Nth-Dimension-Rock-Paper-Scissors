@@ -11,12 +11,20 @@
 
 #include <HAL/HAL.h>
 
+typedef enum { titleScreen, settingsScreen, instructionsScreen } _screenState;
+
 struct _Application {
   // Put your application members and FSM state variables here!
   // =========================================================================
   UART_Baudrate baudChoice;
   bool firstCall;
 };
+
+struct _Gamesettings {
+    _screenState screenState;
+};
+
+typedef struct _Gamesettings Gamesettings;
 typedef struct _Application Application;
 
 // Called only a single time - inside of main(), where the application is
