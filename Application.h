@@ -32,20 +32,14 @@ struct _Gamesettings {
 
     bool startGame;
 
-    char player1Name[4];
-    char player2Name[4];
-    char player3Name[4];
-    char player4Name[4];
+    char playerNames[4][4];
 
     bool player1Turn;
     bool player2Turn;
     bool player3Turn;
     bool player4Turn;
 
-    char player1Move;
-    char player2Move;
-    char player3Move;
-    char player4Move;
+    char playerMoves[4];
 
 };
 
