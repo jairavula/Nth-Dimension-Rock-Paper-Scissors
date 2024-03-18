@@ -34,7 +34,10 @@ void Settings_screen(HAL *hal_p, Gamesettings *game);
 void Instructions_screen(HAL *hal_p, Gamesettings *game);
 void NameSelect_screen(HAL *hal_p, Gamesettings *game);
 void Game_screen(HAL *hal_p, Gamesettings *game);
-void Game_logic(HAL *hal_p, Gamesettings *game);
+void GameOver_screen(HAL *hal_p, Gamesettings *game);
+void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount);
+void Round_logic(HAL *hal_p, Gamesettings *game);
+void getPlayerInput(HAL* hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn , char* name, Gamesettings *game, int playerNumber, int *playersMoved, bool *MSG);
 
 /**
  * The main entry point of your project. The main function should immediately
@@ -255,11 +258,11 @@ char Application_interpretIncomingChar(char rxChar)
 void Screen_manager(HAL *hal_p)
 {
 
-    static Gamesettings game = { titleScreen, 3, 2, true, true, true, true,
+    static Gamesettings game = { titleScreen, 3, 2, true, true, true, true, false,
     false,
                                  { 0 }, true, false, false,
                                  false,
-                                 { 0 } };
+                                 { 0 }, {0}, {0} };
 
     switch (game.screenState)
     {
@@ -304,7 +307,13 @@ void Screen_manager(HAL *hal_p)
         break;
     case gameScreen:
         Game_screen(hal_p, &game);
+        if (game.endGame) {
+            game.screenState = gameOverScreen;
+            Graphics_clearDisplay(&hal_p->g_sContext);
+        }
         break;
+    case gameOverScreen:
+        GameOver_screen(hal_p, &game);
     }
 
 }
@@ -597,149 +606,30 @@ void Game_screen(HAL *hal_p, Gamesettings *game)
 
     char gSLine1[] = "Game Screen";
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) gSLine1, -1, 5, 5, true);
-    Game_logic(hal_p, game);
+    Round_logic(hal_p, game);
 
 }
 
-void Game_logic(HAL *hal_p, Gamesettings *game)
+void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
 {
 
     static int playersMoved = 0;
+    bool lastPlayer = false;
+    static bool MSG = true;
 
-    char p1Name[32];
-    strncpy(p1Name, game->playerNames[0], sizeof(p1Name) - 1);
-    p1Name[sizeof(p1Name) - 1] = '\0';
-    char p2Name[32];
-    strncpy(p2Name, game->playerNames[1], sizeof(p2Name) - 1);
-    p2Name[sizeof(p2Name) - 1] = '\0';
-    char p3Name[32];
-    strncpy(p3Name, game->playerNames[2], sizeof(p3Name) - 1);
-    p3Name[sizeof(p3Name) - 1] = '\0';
-    char p4Name[32];
-    strncpy(p4Name, game->playerNames[3], sizeof(p4Name) - 1);
-    p4Name[sizeof(p4Name) - 1] = '\0';
-
-    char gSstr1[] = ", please enter:";
-    char gSstr2[] = " R or r for Rock";
-    char gSstr3[] = " P or p for Paper";
-    char gSstr4[] = " S or s for Scissors";
 
     if (playersMoved < game->numPlayers)
     {
-        if (game->player1Turn)
-        {
-            static bool loadMSGp1 = true;
-            strcat(p1Name, gSstr1);
-            if (UART_canSend(&hal_p->uart) && loadMSGp1)
-            {
-                UART_sendString(&hal_p->uart, p1Name);
-                UART_sendString(&hal_p->uart, gSstr2);
-                UART_sendString(&hal_p->uart, gSstr3);
-                UART_sendString(&hal_p->uart, gSstr4);
-                loadMSGp1 = false;
-            }
-
-            if (UART_hasChar(&hal_p->uart))
-            {
-                char player1Move = UART_getChar(&hal_p->uart);
-                if (player1Move == 'R' || player1Move == 'r'
-                        || player1Move == 'P' || player1Move == 'p'
-                        || player1Move == 'S' || player1Move == 's')
-                {
-                    game->playerMoves[0] = player1Move;
-                    playersMoved++;
-                    game->player1Turn = false;
-                    game->player2Turn = true;
-                }
-            }
-        }
-        if (game->player2Turn)
-        {
-            static bool loadMSGp2 = true;
-            strcat(p2Name, gSstr1);
-            if (UART_canSend(&hal_p->uart) && loadMSGp2)
-            {
-                UART_sendString(&hal_p->uart, p2Name);
-                UART_sendString(&hal_p->uart, gSstr2);
-                UART_sendString(&hal_p->uart, gSstr3);
-                UART_sendString(&hal_p->uart, gSstr4);
-                loadMSGp2 = false;
-            }
-
-            if (UART_hasChar(&hal_p->uart))
-            {
-                char player2Move = UART_getChar(&hal_p->uart);
-                if (player2Move == 'R' || player2Move == 'r'
-                        || player2Move == 'P' || player2Move == 'p'
-                        || player2Move == 'S' || player2Move == 's')
-                {
-                    game->playerMoves[1] = player2Move;
-                    playersMoved++;
-                    game->player2Turn = false;
-                    game->player3Turn = true;
-                }
-            }
-        }
-        if (game->player3Turn)
-        {
-            static bool loadMSGp3 = true;
-            strcat(p3Name, gSstr1);
-            if (UART_canSend(&hal_p->uart) && loadMSGp3)
-            {
-                UART_sendString(&hal_p->uart, p3Name);
-                UART_sendString(&hal_p->uart, gSstr2);
-                UART_sendString(&hal_p->uart, gSstr3);
-                UART_sendString(&hal_p->uart, gSstr4);
-                loadMSGp3 = false;
-            }
-
-            if (UART_hasChar(&hal_p->uart))
-            {
-                char player3Move = UART_getChar(&hal_p->uart);
-                if (player3Move == 'R' || player3Move == 'r'
-                        || player3Move == 'P' || player3Move == 'p'
-                        || player3Move == 'S' || player3Move == 's')
-                {
-                    game->playerMoves[2] = player3Move;
-                    playersMoved++;
-                    game->player3Turn = false;
-                    game->player4Turn = true;
-                }
-            }
-        }
-        if (game->player4Turn)
-        {
-            static bool loadMSGp4 = true;
-            strcat(p4Name, gSstr1);
-            if (UART_canSend(&hal_p->uart) && loadMSGp4)
-            {
-                UART_sendString(&hal_p->uart, p4Name);
-                UART_sendString(&hal_p->uart, gSstr2);
-                UART_sendString(&hal_p->uart, gSstr3);
-                UART_sendString(&hal_p->uart, gSstr4);
-                loadMSGp4 = false;
-            }
-
-            if (UART_hasChar(&hal_p->uart))
-            {
-                char player4Move = UART_getChar(&hal_p->uart);
-                if (player4Move == 'R' || player4Move == 'r'
-                        || player4Move == 'P' || player4Move == 'p'
-                        || player4Move == 'S' || player4Move == 's')
-                {
-                    game->playerMoves[3] = player4Move;
-                    playersMoved++;
-                    game->player4Turn = false;
-                }
-            }
-        }
-
+       getPlayerInput(hal_p,&game->player1Turn, &game->player2Turn , game->playerNames[0], game, 0, &playersMoved, &MSG);
+       getPlayerInput(hal_p,&game->player2Turn, &game->player3Turn , game->playerNames[1], game, 1, &playersMoved, &MSG);
+       getPlayerInput(hal_p,&game->player3Turn, &game->player4Turn , game->playerNames[2], game, 2, &playersMoved, &MSG);
+       getPlayerInput(hal_p,&game->player4Turn, &lastPlayer , game->playerNames[3], game, 3, &playersMoved,  &MSG);
     }
-
     else
     {
         if (UART_canSend(&hal_p->uart))
         {
+            playersMoved = 0;
             int i = 0;
             int yPos = 30;
             for (i = 0; i <= game->numPlayers; i++)
@@ -758,10 +648,81 @@ void Game_logic(HAL *hal_p, Gamesettings *game)
             }
 
         }
+
+        (*roundCount) ++;
+        playersMoved = 0;
+        MSG = true;
+        game->player1Turn = true;
+
+    }
+}
+
+void Round_logic(HAL *hal_p, Gamesettings *game) {
+    static int roundsPlayed = 0;
+
+    if (roundsPlayed < game->numRounds ) {
+        Game_logic(hal_p, game, &roundsPlayed);
+    } else{
+        game->endGame = true;
     }
 }
 
 
+void GameOver_screen(HAL *hal_p, Gamesettings *game){
+    char gOsLine1[] = "Game Over";
 
+      Graphics_drawString(&hal_p->g_sContext, (int8_t*) gOsLine1, -1, 5, 30, true);
+}
+
+
+
+
+
+
+
+void getPlayerInput(HAL* hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn , char* name, Gamesettings *game, int playerNumber, int *playersMoved, bool *MSG){
+
+    char pName[32];
+    char gSstr1[] = ", please enter:";
+    char gSstr2[] = " R or r for Rock";
+    char gSstr3[] = " P or p for Paper";
+    char gSstr4[] = " S or s for Scissors";
+
+    strncpy(pName, game->playerNames[playerNumber], sizeof(pName) - 1);
+    pName[sizeof(pName) - 1] = '\0';
+
+ if (*currentPlayerTurn)
+
+        {
+            static bool loadMSG = true;
+            strcat(pName, gSstr1);
+            if (UART_canSend(&hal_p->uart) && *MSG)
+            {
+                UART_sendString(&hal_p->uart, pName);
+                UART_sendString(&hal_p->uart, gSstr2);
+                UART_sendString(&hal_p->uart, gSstr3);
+                UART_sendString(&hal_p->uart, gSstr4);
+                *(MSG) = false;
+            }
+
+            if (UART_hasChar(&hal_p->uart))
+            {
+                char playerMove = UART_getChar(&hal_p->uart);
+                if (playerMove == 'R' || playerMove == 'r'
+                        || playerMove == 'P' || playerMove == 'p'
+                        || playerMove == 'S' || playerMove == 's')
+                {
+                    game->playerMoves[playerNumber] = playerMove;
+                    (*playersMoved) ++;
+                    *currentPlayerTurn = false;
+                    *nextPlayerTurn = true;
+
+                    if (*playersMoved < game->numPlayers){
+                        *(MSG) = true;
+                    }
+                }
+            }
+        }
+}
 
 
