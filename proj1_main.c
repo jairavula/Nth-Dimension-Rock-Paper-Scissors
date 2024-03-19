@@ -37,7 +37,13 @@ void Game_screen(HAL *hal_p, Gamesettings *game);
 void GameOver_screen(HAL *hal_p, Gamesettings *game);
 void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount);
 void Round_logic(HAL *hal_p, Gamesettings *game);
-void getPlayerInput(HAL* hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn , char* name, Gamesettings *game, int playerNumber, int *playersMoved, bool *MSG);
+void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
+                    char *name, Gamesettings *game, int playerNumber,
+                    int *playersMoved, bool *MSG);
+void NameSelect_screenDialogue(HAL *hal_p, Gamesettings *game);
+void NameEntry(HAL *hal_p, Gamesettings *game, int *yNamePos, int *xNamePos,
+               int *nameIndex);
+void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCursorPos, char* antiCursor, char* cursor, char* numRoundsChar, char* numPlayersChar, int *numRounds, int *numPlayers);
 
 /**
  * The main entry point of your project. The main function should immediately
@@ -134,7 +140,6 @@ void Application_loop(Application *app_p, HAL *hal_p)
         char rxChar = UART_getChar(&hal_p->uart);
 
         char txChar = Application_interpretIncomingChar(rxChar);
-
 
         if ((rxChar == 'r') || (rxChar == 'p') || (rxChar == 's'))
         {
@@ -257,13 +262,7 @@ char Application_interpretIncomingChar(char rxChar)
 
 void Screen_manager(HAL *hal_p)
 {
-
-    static Gamesettings game = { titleScreen, 3, 2, true, true, true, true, false,
-    false,
-                                 { 0 }, true, false, false,
-                                 false,
-                                 { 0 }, {0}, {0} };
-
+    static Gamesettings game = { titleScreen, 3, 2, true, true, true, true, false, false, { 0 }, true, false, false, false, { 0 }, { 0 }, { 0 } };
     switch (game.screenState)
     {
     case titleScreen:
@@ -279,7 +278,6 @@ void Screen_manager(HAL *hal_p)
             game.screenState = instructionsScreen;
             Graphics_clearDisplay(&hal_p->g_sContext);
         }
-
         break;
     case settingsScreen:
         Settings_screen(hal_p, &game);
@@ -307,7 +305,8 @@ void Screen_manager(HAL *hal_p)
         break;
     case gameScreen:
         Game_screen(hal_p, &game);
-        if (game.endGame) {
+        if (game.endGame)
+        {
             game.screenState = gameOverScreen;
             Graphics_clearDisplay(&hal_p->g_sContext);
         }
@@ -315,7 +314,6 @@ void Screen_manager(HAL *hal_p)
     case gameOverScreen:
         GameOver_screen(hal_p, &game);
     }
-
 }
 
 void Title_screen(HAL *hal_p, Gamesettings *game)
@@ -374,72 +372,77 @@ void Settings_screen(HAL *hal_p, Gamesettings *game)
         true);
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) sSLine9, -1, 0, 111,
         true);
-
         game->loadSettingsScreen = false;
     }
 
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) cursor, -1, 115,
                         settingsScreenCursorPos, true);
 
-    if (Button_isTapped(&hal_p->launchpadS2) && settingsScreenCursorPos == 61)
-    {
-        Graphics_drawString(&hal_p->g_sContext, (int8_t*) antiCursor, -1, 115,
-                            settingsScreenCursorPos, true);
-        settingsScreenCursorPos += 15;
-        Graphics_drawString(&hal_p->g_sContext, (int8_t*) cursor, -1, 115,
-                            settingsScreenCursorPos, true);
-    }
-    else if (Button_isTapped(&hal_p->launchpadS2)
-            && settingsScreenCursorPos == 76)
-    {
-        Graphics_drawString(&hal_p->g_sContext, (int8_t*) antiCursor, -1, 115,
-                            settingsScreenCursorPos, true);
-        settingsScreenCursorPos -= 15;
-        Graphics_drawString(&hal_p->g_sContext, (int8_t*) cursor, -1, 115,
-                            settingsScreenCursorPos, true);
-    }
-    if (Button_isTapped(&hal_p->boosterpackJS) && settingsScreenCursorPos == 61)
-    {
-        if (numRounds == 6)
-        {
-            numRounds = 1;
-            sprintf(numRoundsChar, "%d", numRounds);
-            Graphics_drawString(&hal_p->g_sContext, (int8_t*) numRoundsChar, -1,
-                                105, settingsScreenCursorPos, true);
-
-        }
-        else
-        {
-            numRounds++;
-            sprintf(numRoundsChar, "%d", numRounds);
-            Graphics_drawString(&hal_p->g_sContext, (int8_t*) numRoundsChar, -1,
-                                105, settingsScreenCursorPos, true);
-        }
-
-    }
-    else if (Button_isTapped(&hal_p->boosterpackJS)
-            && settingsScreenCursorPos == 76)
-    {
-        if (numPlayers == 4)
-        {
-            numPlayers = 2;
-            sprintf(numPlayersChar, "%d", numPlayers);
-            Graphics_drawString(&hal_p->g_sContext, (int8_t*) numPlayersChar,
-                                -1, 105, settingsScreenCursorPos, true);
-
-        }
-        else
-        {
-            numPlayers++;
-            sprintf(numPlayersChar, "%d", numPlayers);
-            Graphics_drawString(&hal_p->g_sContext, (int8_t*) numPlayersChar,
-                                -1, 105, settingsScreenCursorPos, true);
-        }
-
-    }
+    Settings_screenLogic(hal_p, game, &settingsScreenCursorPos, antiCursor, cursor, numRoundsChar, numPlayersChar, &numRounds, &numPlayers);
     game->numPlayers = numPlayers;
     game->numRounds = numRounds;
 }
+
+
+
+void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCursorPos, char* antiCursor, char* cursor, char* numRoundsChar, char* numPlayersChar, int *numRounds, int *numPlayers){
+
+    if (Button_isTapped(&hal_p->launchpadS2) && *settingsScreenCursorPos == 61)
+        {
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) antiCursor, -1, 115,
+                                *settingsScreenCursorPos, true);
+            *settingsScreenCursorPos += 15;
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) cursor, -1, 115,
+                                *settingsScreenCursorPos, true);
+        }
+        else if (Button_isTapped(&hal_p->launchpadS2)
+                && *settingsScreenCursorPos == 76)
+        {
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) antiCursor, -1, 115,
+                                *settingsScreenCursorPos, true);
+            *settingsScreenCursorPos -= 15;
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) cursor, -1, 115,
+                                *settingsScreenCursorPos, true);
+        }
+        if (Button_isTapped(&hal_p->boosterpackJS) && *settingsScreenCursorPos == 61)
+        {
+            if (*numRounds == 6)
+            {
+                *numRounds = 1;
+                sprintf(numRoundsChar, "%d", *numRounds);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) numRoundsChar, -1,
+                                    105, *settingsScreenCursorPos, true);
+            }
+            else
+            {
+                (*numRounds)++;
+                sprintf(numRoundsChar, "%d", *numRounds);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) numRoundsChar, -1,
+                                    105, *settingsScreenCursorPos, true);
+            }
+
+        }
+        else if (Button_isTapped(&hal_p->boosterpackJS)
+                && *settingsScreenCursorPos == 76)
+        {
+            if (*numPlayers == 4)
+            {
+                *numPlayers = 2;
+                sprintf(numPlayersChar, "%d", *numPlayers);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) numPlayersChar,
+                                    -1, 105, *settingsScreenCursorPos, true);
+            }
+            else
+            {
+                (*numPlayers)++;
+                sprintf(numPlayersChar, "%d", *numPlayers);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) numPlayersChar,
+                                    -1, 105, *settingsScreenCursorPos, true);
+            }
+        }
+
+}
+
 
 void Instructions_screen(HAL *hal_p, Gamesettings *game)
 {
@@ -487,16 +490,8 @@ void Instructions_screen(HAL *hal_p, Gamesettings *game)
 
 }
 
-void NameSelect_screen(HAL *hal_p, Gamesettings *game)
+void NameSelect_screenDialogue(HAL *hal_p, Gamesettings *game)
 {
-    static int i = 1;
-    static int yPosition = 13;
-    char nameField[4];
-    int xNamePos = 40;
-    static int yNamePos = 12;
-    static int playersEntered = 0;
-    static int nameIndex = 0;
-
     char nSSLine1[] = "Name Select Screen";
     char nSSLine2[] = "Type 3 letters into ";
     char nSSLine3[] = "the UART terminal, ";
@@ -522,9 +517,63 @@ void NameSelect_screen(HAL *hal_p, Gamesettings *game)
         true);
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) nSSLine7, -1, 5, 100,
         true);
-
         game->loadNameSelectScreen = false;
     }
+}
+
+void NameEntry(HAL *hal_p, Gamesettings *game, int *yNamePos, int *xNamePos,
+               int *nameIndex)
+{
+
+    if (*yNamePos == 12)
+    {
+        game->playerNames[0][*nameIndex] = UART_getChar(&hal_p->uart);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) game->playerNames[0],
+                            -1, *xNamePos, *yNamePos, true);
+        if (UART_canSend(&hal_p->uart))
+            UART_sendChar(&hal_p->uart, game->playerNames[0][*nameIndex]);
+        (*nameIndex)++;
+    }
+    if (*yNamePos == 20)
+    {
+        game->playerNames[1][*nameIndex] = UART_getChar(&hal_p->uart);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) game->playerNames[1],
+                            -1, *xNamePos, *yNamePos, true);
+        if (UART_canSend(&hal_p->uart))
+            UART_sendChar(&hal_p->uart, game->playerNames[1][*nameIndex]);
+        (*nameIndex)++;
+    }
+    if (*yNamePos == 28)
+    {
+        game->playerNames[2][*nameIndex] = UART_getChar(&hal_p->uart);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) game->playerNames[2],
+                            -1, *xNamePos, *yNamePos, true);
+        if (UART_canSend(&hal_p->uart))
+            UART_sendChar(&hal_p->uart, game->playerNames[2][*nameIndex]);
+        (*nameIndex)++;
+    }
+    if (*yNamePos == 36)
+    {
+        game->playerNames[3][*nameIndex] = UART_getChar(&hal_p->uart);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) game->playerNames[3],
+                            -1, *xNamePos, *yNamePos, true);
+        if (UART_canSend(&hal_p->uart))
+            UART_sendChar(&hal_p->uart, game->playerNames[3][*nameIndex]);
+        (*nameIndex)++;
+    }
+}
+
+void NameSelect_screen(HAL *hal_p, Gamesettings *game)
+{
+    static int i = 1;
+    static int yPosition = 13;
+    char nameField[4];
+    int xNamePos = 40;
+    static int yNamePos = 12;
+    static int playersEntered = 0;
+    static int nameIndex = 0;
+
+    NameSelect_screenDialogue(hal_p, game);
 
     while (i <= game->numPlayers)
     {
@@ -535,57 +584,9 @@ void NameSelect_screen(HAL *hal_p, Gamesettings *game)
         yPosition += 8;
     }
 
-    if (playersEntered < game->numPlayers)
+    if (nameIndex < 3)
     {
-        if (nameIndex < 3)
-        {
-            if (yNamePos == 12)
-            {
-                game->playerNames[0][nameIndex] = UART_getChar(&hal_p->uart);
-                Graphics_drawString(&hal_p->g_sContext,
-                                    (int8_t*) game->playerNames[0], -1,
-                                    xNamePos, yNamePos, true);
-                if (UART_canSend(&hal_p->uart))
-                    UART_sendChar(&hal_p->uart,
-                                  game->playerNames[0][nameIndex]);
-
-
-                nameIndex++;
-            }
-            if (yNamePos == 20)
-            {
-                game->playerNames[1][nameIndex] = UART_getChar(&hal_p->uart);
-                Graphics_drawString(&hal_p->g_sContext,
-                                    (int8_t*) game->playerNames[1], -1,
-                                    xNamePos, yNamePos, true);
-                if (UART_canSend(&hal_p->uart))
-                    UART_sendChar(&hal_p->uart,
-                                  game->playerNames[1][nameIndex]);
-                nameIndex++;
-            }
-            if (yNamePos == 28)
-            {
-                game->playerNames[2][nameIndex] = UART_getChar(&hal_p->uart);
-                Graphics_drawString(&hal_p->g_sContext,
-                                    (int8_t*) game->playerNames[2], -1,
-                                    xNamePos, yNamePos, true);
-                if (UART_canSend(&hal_p->uart))
-                    UART_sendChar(&hal_p->uart,
-                                  game->playerNames[2][nameIndex]);
-                nameIndex++;
-            }
-            if (yNamePos == 36)
-            {
-                game->playerNames[3][nameIndex] = UART_getChar(&hal_p->uart);
-                Graphics_drawString(&hal_p->g_sContext,
-                                    (int8_t*) game->playerNames[3], -1,
-                                    xNamePos, yNamePos, true);
-                if (UART_canSend(&hal_p->uart))
-                    UART_sendChar(&hal_p->uart,
-                                  game->playerNames[3][nameIndex]);
-                nameIndex++;
-            }
-        }
+        NameEntry(hal_p, game, &yNamePos, &xNamePos, &nameIndex);
     }
 
     if (Button_isTapped(&hal_p->boosterpackS1))
@@ -617,13 +618,16 @@ void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
     bool lastPlayer = false;
     static bool MSG = true;
 
-
     if (playersMoved < game->numPlayers)
     {
-       getPlayerInput(hal_p,&game->player1Turn, &game->player2Turn , game->playerNames[0], game, 0, &playersMoved, &MSG);
-       getPlayerInput(hal_p,&game->player2Turn, &game->player3Turn , game->playerNames[1], game, 1, &playersMoved, &MSG);
-       getPlayerInput(hal_p,&game->player3Turn, &game->player4Turn , game->playerNames[2], game, 2, &playersMoved, &MSG);
-       getPlayerInput(hal_p,&game->player4Turn, &lastPlayer , game->playerNames[3], game, 3, &playersMoved,  &MSG);
+        getPlayerInput(hal_p, &game->player1Turn, &game->player2Turn,
+                       game->playerNames[0], game, 0, &playersMoved, &MSG);
+        getPlayerInput(hal_p, &game->player2Turn, &game->player3Turn,
+                       game->playerNames[1], game, 1, &playersMoved, &MSG);
+        getPlayerInput(hal_p, &game->player3Turn, &game->player4Turn,
+                       game->playerNames[2], game, 2, &playersMoved, &MSG);
+        getPlayerInput(hal_p, &game->player4Turn, &lastPlayer,
+                       game->playerNames[3], game, 3, &playersMoved, &MSG);
     }
     else
     {
@@ -641,15 +645,15 @@ void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
                 Graphics_drawString(&hal_p->g_sContext,
                                     (int8_t*) game->playerNames[i], -1, 5, yPos,
                                     true);
-                Graphics_drawString(&hal_p->g_sContext,
-                                                    (int8_t*) displayMove, -1, 30, yPos,
-                                                    true);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) displayMove,
+                                    -1, 30, yPos,
+                                    true);
                 yPos += 8;
             }
 
         }
 
-        (*roundCount) ++;
+        (*roundCount)++;
         playersMoved = 0;
         MSG = true;
         game->player1Turn = true;
@@ -657,30 +661,32 @@ void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
     }
 }
 
-void Round_logic(HAL *hal_p, Gamesettings *game) {
+void Round_logic(HAL *hal_p, Gamesettings *game)
+{
     static int roundsPlayed = 0;
 
-    if (roundsPlayed < game->numRounds ) {
+    if (roundsPlayed < game->numRounds)
+    {
         Game_logic(hal_p, game, &roundsPlayed);
-    } else{
+    }
+    else
+    {
         game->endGame = true;
     }
 }
 
-
-void GameOver_screen(HAL *hal_p, Gamesettings *game){
+void GameOver_screen(HAL *hal_p, Gamesettings *game)
+{
     char gOsLine1[] = "Game Over";
 
-      Graphics_drawString(&hal_p->g_sContext, (int8_t*) gOsLine1, -1, 5, 30, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) gOsLine1, -1, 5, 30,
+    true);
 }
 
-
-
-
-
-
-
-void getPlayerInput(HAL* hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn , char* name, Gamesettings *game, int playerNumber, int *playersMoved, bool *MSG){
+void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
+                    char *name, Gamesettings *game, int playerNumber,
+                    int *playersMoved, bool *MSG)
+{
 
     char pName[32];
     char gSstr1[] = ", please enter:";
@@ -691,38 +697,37 @@ void getPlayerInput(HAL* hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn , 
     strncpy(pName, game->playerNames[playerNumber], sizeof(pName) - 1);
     pName[sizeof(pName) - 1] = '\0';
 
- if (*currentPlayerTurn)
+    if (*currentPlayerTurn)
 
+    {
+        strcat(pName, gSstr1);
+        if (UART_canSend(&hal_p->uart) && *MSG)
         {
-            static bool loadMSG = true;
-            strcat(pName, gSstr1);
-            if (UART_canSend(&hal_p->uart) && *MSG)
-            {
-                UART_sendString(&hal_p->uart, pName);
-                UART_sendString(&hal_p->uart, gSstr2);
-                UART_sendString(&hal_p->uart, gSstr3);
-                UART_sendString(&hal_p->uart, gSstr4);
-                *(MSG) = false;
-            }
+            UART_sendString(&hal_p->uart, pName);
+            UART_sendString(&hal_p->uart, gSstr2);
+            UART_sendString(&hal_p->uart, gSstr3);
+            UART_sendString(&hal_p->uart, gSstr4);
+            *(MSG) = false;
+        }
 
-            if (UART_hasChar(&hal_p->uart))
+        if (UART_hasChar(&hal_p->uart))
+        {
+            char playerMove = UART_getChar(&hal_p->uart);
+            if (playerMove == 'R' || playerMove == 'r' || playerMove == 'P'
+                    || playerMove == 'p' || playerMove == 'S'
+                    || playerMove == 's')
             {
-                char playerMove = UART_getChar(&hal_p->uart);
-                if (playerMove == 'R' || playerMove == 'r'
-                        || playerMove == 'P' || playerMove == 'p'
-                        || playerMove == 'S' || playerMove == 's')
+                game->playerMoves[playerNumber] = playerMove;
+                (*playersMoved)++;
+                *currentPlayerTurn = false;
+                *nextPlayerTurn = true;
+
+                if (*playersMoved < game->numPlayers)
                 {
-                    game->playerMoves[playerNumber] = playerMove;
-                    (*playersMoved) ++;
-                    *currentPlayerTurn = false;
-                    *nextPlayerTurn = true;
-
-                    if (*playersMoved < game->numPlayers){
-                        *(MSG) = true;
-                    }
+                    *(MSG) = true;
                 }
             }
         }
+    }
 }
-
 
