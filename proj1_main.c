@@ -149,7 +149,7 @@ void Application_loop(Application *app_p, HAL *hal_p)
         {
             LED_turnOn(&hal_p->boosterpackBlue);
         }
-        /*
+
          char str[2];
          str[0] = rxChar;
          str[1] = '\0';
@@ -157,13 +157,13 @@ void Application_loop(Application *app_p, HAL *hal_p)
          Graphics_drawString(&hal_p->g_sContext, (int8_t*)str, -1, x, y, true);
          x +=5;
          if (x >= 120){
-         y +=10;
+         y +=10;'g
          x = 0;
          }
          */
 
     }
-}
+
 
 /**
  * Updates which LEDs are lit and what baud rate the UART module communicates
@@ -861,12 +861,13 @@ void GameOver_screen(HAL *hal_p, Gamesettings *game)
         yPosPlayers +=8;
 
     }
-
-    for (winnerIndex =0; winnerIndex < numWinners; winnerIndex++){ // displays winners from the winner list
-        Graphics_drawString(&hal_p->g_sContext,
-                            (int8_t*) game->playerNames[winners[winnerIndex]], -1, 90, yPosWinners ,
-                                                     true);
-        yPosWinners +=8;
+    if (highestValue > 0){
+        for (winnerIndex =0; winnerIndex < numWinners; winnerIndex++){ // displays winners from the winner list
+               Graphics_drawString(&hal_p->g_sContext,
+                                   (int8_t*) game->playerNames[winners[winnerIndex]], -1, 90, yPosWinners ,
+                                                            true);
+               yPosWinners +=8;
+    }
     }
 }
 
@@ -921,6 +922,9 @@ void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
                 {
                     *(MSG) = true; // display the "please move" msg again
                 }
+            }
+            else{
+                UART_sendString(&hal_p->uart, "Please enter 'r, 'p', or 's'");
             }
         }
     }
