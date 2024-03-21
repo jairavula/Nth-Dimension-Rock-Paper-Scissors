@@ -801,10 +801,52 @@ void Game_logic(HAL *hal_p, Gamesettings *game)
 
 void GameOver_screen(HAL *hal_p, Gamesettings *game)
 {
-    char gOsLine1[] = "Game Over";
+    int yPosPlayers = 25;
+    int yPosWinners = 70;
+    int i=0;
+    char displayScore[2];
+    int winners[4];
+    int winnerIndex;
+    int highestValue = 0;
+    int numWinners = 0;
 
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) gOsLine1, -1, 5, 30,
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Game Over", -1, 5, 10,
     true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Winners:", -1, 5, 90,
+       true);
+    for (i=0; i < game->numPlayers; i++){
+        if (game->playerScores[i] > highestValue){
+            highestValue = game->playerScores[i];
+            winners[0] = i;
+            numWinners = 1;
+        } else if (game->playerScores[i] == highestValue){
+            winners[numWinners] = i;
+            numWinners++;
+        }
+    }
+
+    for (i=0; i < game->numPlayers; i++){
+        snprintf(displayScore, sizeof(displayScore), "%d", game->playerScores[i]);
+
+        Graphics_drawString(&hal_p->g_sContext,
+                                             (int8_t*) game->playerNames[i], -1, 5, yPosPlayers,
+                                             true);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Wins: ",
+                                                           -1, 70, yPosPlayers,
+                                                           true);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) displayScore,
+                                                           -1, 110, yPosPlayers,
+                                                           true);
+        yPosPlayers +=8;
+
+    }
+
+    for (winnerIndex =0; winnerIndex < numWinners; winnerIndex++){
+        Graphics_drawString(&hal_p->g_sContext,
+                            (int8_t*) game->playerNames[winners[winnerIndex]], -1, 90, yPosWinners ,
+                                                     true);
+        yPosWinners +=8;
+    }
 }
 
 
