@@ -35,8 +35,9 @@ void Instructions_screen(HAL *hal_p, Gamesettings *game);
 void NameSelect_screen(HAL *hal_p, Gamesettings *game);
 void Game_screen(HAL *hal_p, Gamesettings *game);
 void GameOver_screen(HAL *hal_p, Gamesettings *game);
-void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount);
-void Round_logic(HAL *hal_p, Gamesettings *game);
+void Round_logic(HAL *hal_p, Gamesettings *game, int *roundCount);
+void Round_winLogic(HAL *hal_p, Gamesettings *game, int *roundCount);
+void Game_logic(HAL *hal_p, Gamesettings *game);
 void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
                     char *name, Gamesettings *game, int playerNumber,
                     int *playersMoved, bool *MSG);
@@ -260,9 +261,14 @@ char Application_interpretIncomingChar(char rxChar)
     return (txChar);
 }
 
+
+
+
+
+
 void Screen_manager(HAL *hal_p)
 {
-    static Gamesettings game = { titleScreen, 3, 2, true, true, true, true, false, false, { 0 }, true, false, false, false, { 0 }, { 0 }, { 0 } };
+    static Gamesettings game = { titleScreen, 3, 2, true, true, true, true, false, false, { 0 }, true, false, false, false, { 0 },{0}, { 0 }, { 0 } };
     switch (game.screenState)
     {
     case titleScreen:
@@ -316,6 +322,10 @@ void Screen_manager(HAL *hal_p)
     }
 }
 
+
+
+
+
 void Title_screen(HAL *hal_p, Gamesettings *game)
 {
     char tSLine1[] = "Rock Paper Scissors";
@@ -332,12 +342,17 @@ void Title_screen(HAL *hal_p, Gamesettings *game)
     true);
 }
 
+
+
+
+
+
+
 void Settings_screen(HAL *hal_p, Gamesettings *game)
 {
-
     static int settingsScreenCursorPos = 61;
-    static int numRounds = 0;
-    static int numPlayers = 1;
+    static int numRounds = 3;
+    static int numPlayers = 2;
     static char numRoundsChar[4];
     static char numPlayersChar[4];
     char sSLine1[] = "Choose Settings";
@@ -351,7 +366,6 @@ void Settings_screen(HAL *hal_p, Gamesettings *game)
     char sSLine9[] = "LB1: Reset Settings";
     char cursor[] = "*";
     char antiCursor[] = " ";
-
     if (game->loadSettingsScreen)
     {
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) sSLine1, -1, 0, 5,
@@ -372,12 +386,16 @@ void Settings_screen(HAL *hal_p, Gamesettings *game)
         true);
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) sSLine9, -1, 0, 111,
         true);
+        sprintf(numRoundsChar, "%d", numRounds);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) numRoundsChar, -1,
+                            105, settingsScreenCursorPos, true);
+        sprintf(numPlayersChar, "%d", numPlayers);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) numPlayersChar, -1,
+                            105, settingsScreenCursorPos + 15, true);
         game->loadSettingsScreen = false;
     }
-
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) cursor, -1, 115,
                         settingsScreenCursorPos, true);
-
     Settings_screenLogic(hal_p, game, &settingsScreenCursorPos, antiCursor, cursor, numRoundsChar, numPlayersChar, &numRounds, &numPlayers);
     game->numPlayers = numPlayers;
     game->numRounds = numRounds;
@@ -385,8 +403,11 @@ void Settings_screen(HAL *hal_p, Gamesettings *game)
 
 
 
-void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCursorPos, char* antiCursor, char* cursor, char* numRoundsChar, char* numPlayersChar, int *numRounds, int *numPlayers){
 
+
+
+
+void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCursorPos, char* antiCursor, char* cursor, char* numRoundsChar, char* numPlayersChar, int *numRounds, int *numPlayers){
     if (Button_isTapped(&hal_p->launchpadS2) && *settingsScreenCursorPos == 61)
         {
             Graphics_drawString(&hal_p->g_sContext, (int8_t*) antiCursor, -1, 115,
@@ -440,8 +461,13 @@ void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCur
                                     -1, 105, *settingsScreenCursorPos, true);
             }
         }
-
 }
+
+
+
+
+
+
 
 
 void Instructions_screen(HAL *hal_p, Gamesettings *game)
@@ -490,6 +516,13 @@ void Instructions_screen(HAL *hal_p, Gamesettings *game)
 
 }
 
+
+
+
+
+
+
+
 void NameSelect_screenDialogue(HAL *hal_p, Gamesettings *game)
 {
     char nSSLine1[] = "Name Select Screen";
@@ -520,6 +553,12 @@ void NameSelect_screenDialogue(HAL *hal_p, Gamesettings *game)
         game->loadNameSelectScreen = false;
     }
 }
+
+
+
+
+
+
 
 void NameEntry(HAL *hal_p, Gamesettings *game, int *yNamePos, int *xNamePos,
                int *nameIndex)
@@ -563,6 +602,12 @@ void NameEntry(HAL *hal_p, Gamesettings *game, int *yNamePos, int *xNamePos,
     }
 }
 
+
+
+
+
+
+
 void NameSelect_screen(HAL *hal_p, Gamesettings *game)
 {
     static int i = 1;
@@ -602,21 +647,35 @@ void NameSelect_screen(HAL *hal_p, Gamesettings *game)
     }
 }
 
+
+
+
+
+
 void Game_screen(HAL *hal_p, Gamesettings *game)
 {
 
     char gSLine1[] = "Game Screen";
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) gSLine1, -1, 5, 5, true);
-    Round_logic(hal_p, game);
+    Game_logic(hal_p, game);
 
 }
 
-void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
+
+
+
+
+
+
+
+void Round_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
 {
 
     static int playersMoved = 0;
     bool lastPlayer = false;
     static bool MSG = true;
+    static bool endOfRoundMSG = true;
+    char playRoundMSG [] = "Press BB1 to play the round";
 
     if (playersMoved < game->numPlayers)
     {
@@ -628,19 +687,70 @@ void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
                        game->playerNames[2], game, 2, &playersMoved, &MSG);
         getPlayerInput(hal_p, &game->player4Turn, &lastPlayer,
                        game->playerNames[3], game, 3, &playersMoved, &MSG);
+
     }
     else
     {
-        if (UART_canSend(&hal_p->uart))
+        if (endOfRoundMSG){
+            UART_sendString(&hal_p->uart, playRoundMSG);
+            endOfRoundMSG = false;
+        }
+
+        if (UART_canSend(&hal_p->uart) && Button_isTapped(&hal_p->boosterpackS1))
         {
-            playersMoved = 0;
+            Round_winLogic(hal_p, game, roundCount);
+            (*roundCount)++;
+                   playersMoved = 0;
+                   MSG = true;
+                   endOfRoundMSG = true;
+                   game->player1Turn = true;
+        }
+    }
+}
+
+
+void Round_endLogic(HAL *hal_p, Gamesettings *game, int *roundCount) {
+    int r = 0;
+    int p = 0;
+    int s = 0;
+    int i=0;
+
+    for (i = 0; i < game->numPlayers; i++){
+        if (game->playerMoves[i] == 'r' || game->playerMoves[i] == 'R') r++;
+        else if (game->playerMoves[i] == 'p' || game->playerMoves[i] == 'P') p++;
+        else if (game->playerMoves[i] == 's' || game->playerMoves[i] == 'S') s++;
+    }
+    if ((r > 0 && p > 0 && s > 0) || (r == game->numPlayers || p == game->numPlayers || s == game->numPlayers)){
+        if(r == game->numPlayers || p == game->numPlayers || s == game->numPlayers){
+            for (i=0; i< game->numPlayers; i++) game->playerScores[i]++;
+        }
+    } else{
+        for (i=0; i< game->numPlayers; i++){
+            if(((game->playerMoves[i] == 'r' || game->playerMoves[i] == 'R') && s > 0) ||
+               ((game->playerMoves[i] == 'p' || game->playerMoves[i] == 'P') && r > 0) ||
+               ((game->playerMoves[i] == 's' || game->playerMoves[i] == 'S') && p > 0)){
+                game->playerScores[i]++;
+            }
+        }
+    }
+}
+
+void Round_winLogic(HAL *hal_p, Gamesettings *game, int *roundCount) {
+
+Round_endLogic(hal_p, game, roundCount);
             int i = 0;
             int yPos = 30;
-            for (i = 0; i <= game->numPlayers; i++)
+            for (i = 0; i < game->numPlayers; i++)
             {
                 char displayMove[2];
+                char displayScore[2];
+                char displayRound[2];
+                char wins [] = "Wins: ";
+                char round [] = "Round ";
                 displayMove[0] = game->playerMoves[i];
                 displayMove[1] = '\0';
+                snprintf(displayScore, sizeof(displayScore), "%d", game->playerScores[i]);
+                snprintf(displayRound, sizeof(displayRound), "%d", *roundCount + 1);
 
                 Graphics_drawString(&hal_p->g_sContext,
                                     (int8_t*) game->playerNames[i], -1, 5, yPos,
@@ -648,30 +758,44 @@ void Game_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
                 Graphics_drawString(&hal_p->g_sContext, (int8_t*) displayMove,
                                     -1, 30, yPos,
                                     true);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) wins,
+                                                    -1, 70, yPos,
+                                                    true);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) displayScore,
+                                                    -1, 110, yPos,
+                                                    true);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) round,
+                                                                                    -1, 30, 90,
+                                                                                    true);
+                Graphics_drawString(&hal_p->g_sContext, (int8_t*) displayRound,
+                                                                    -1, 70, 90,
+                                                                    true);
                 yPos += 8;
             }
 
-        }
 
-        (*roundCount)++;
-        playersMoved = 0;
-        MSG = true;
-        game->player1Turn = true;
-
-    }
 }
 
-void Round_logic(HAL *hal_p, Gamesettings *game)
+
+
+
+void Game_logic(HAL *hal_p, Gamesettings *game)
 {
     static int roundsPlayed = 0;
+    char endMSG [] = "Press BB1 to end ";
 
     if (roundsPlayed < game->numRounds)
     {
-        Game_logic(hal_p, game, &roundsPlayed);
+        Round_logic(hal_p, game, &roundsPlayed);
     }
     else
     {
-        game->endGame = true;
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) endMSG,
+                                                            -1, 15, 80,
+                                                            true);
+        if (Button_isTapped(&hal_p->boosterpackS1)){
+            game->endGame = true;
+        }
     }
 }
 
@@ -682,6 +806,14 @@ void GameOver_screen(HAL *hal_p, Gamesettings *game)
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) gOsLine1, -1, 5, 30,
     true);
 }
+
+
+
+
+
+
+
+
 
 void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
                     char *name, Gamesettings *game, int playerNumber,

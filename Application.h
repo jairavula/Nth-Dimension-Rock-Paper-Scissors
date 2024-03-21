@@ -42,6 +42,8 @@ struct _Gamesettings {
 
     char playerMoves[4];
 
+    int playerScores[4];
+
     char roundWinners[4];
     char gameWinner;
 
