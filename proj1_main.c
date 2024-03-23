@@ -12,6 +12,11 @@
 #include <HAL/HAL.h>
 #include <HAL/Timer.h>
 
+ extern const Graphics_Image homepage8BPP_UNCOMP;
+ extern const Graphics_Image gamescreen8BPP_UNCOMP;
+ extern const Graphics_Image gameoverscreen8BPP_UNCOMP;
+ extern const Graphics_Image softresetscreen8BPP_UNCOMP;
+
 // Non-blocking check. Whenever Launchpad S1 is pressed, LED1 turns on.
 static void InitNonBlockingLED()
 {
@@ -31,12 +36,12 @@ static void PollNonBlockingLED()
 
 // Declaration of all functions I made
 void Screen_manager(HAL *hal_p);
-void Title_screen(HAL *hal_p, Gamesettings *game);
+void Title_screen(HAL *hal_p, Gamesettings *game, bool *TitleScreenImage);
 void Settings_screen(HAL *hal_p, Gamesettings *game);
-void Instructions_screen(HAL *hal_p, Gamesettings *game);
+void Instructions_screen(HAL *hal_p, Gamesettings *game, bool *TitleScreenImage);
 void NameSelect_screen(HAL *hal_p, Gamesettings *game);
-void Game_screen(HAL *hal_p, Gamesettings *game);
-void GameOver_screen(HAL *hal_p, Gamesettings *game);
+void Game_screen(HAL *hal_p, Gamesettings *game, bool *loadGameScreen);
+void GameOver_screen(HAL *hal_p, Gamesettings *game, bool *loadGameOverScreen);
 void Round_logic(HAL *hal_p, Gamesettings *game, int *roundCount);
 void Round_winLogic(HAL *hal_p, Gamesettings *game, int *roundCount);
 void Game_logic(HAL *hal_p, Gamesettings *game);
@@ -48,7 +53,7 @@ void NameEntry(HAL *hal_p, Gamesettings *game, int *yNamePos, int *xNamePos,
                int *nameIndex);
 void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCursorPos, char* antiCursor, char* cursor, char* numRoundsChar, char* numPlayersChar, int *numRounds, int *numPlayers);
 void NameEntryLogic(HAL *hal_p, Gamesettings* game, int *yNamePos, int* xNamePos, int*nameIndex, int playerIndex);
-void Soft_Reset(HAL* hal_p, Gamesettings *game);
+void Soft_Reset(HAL* hal_p, Gamesettings *game, bool *loadGameOverScreen, bool *loadGameScreen);
 /**
  * The main entry point of your project. The main function should immediately
  * stop the Watchdog timer, call the Application constructor, and then
@@ -273,11 +278,14 @@ char Application_interpretIncomingChar(char rxChar)
 void Screen_manager(HAL *hal_p)
 { // Initializes the game settings for a new game
     static Gamesettings game = { titleScreen, 3, 2, true, true, true, true, false, false, { 0 }, true, false, false, false, false, false, { 0 },{ 0 }, { 0 }, { 0 } };
+    static bool loadGameOverScreen = true;
+    static bool loadGameScreen = true;
+    static bool TitleScreenImage = true;
     switch (game.screenState) // FSM logic for each screen setting
     {
     // entry point of game, leads to game settings or instructions screen through button taps
     case titleScreen:
-        Title_screen(hal_p, &game);
+        Title_screen(hal_p, &game, &TitleScreenImage);
         if (Button_isTapped(&hal_p->boosterpackS1))
         {
             game.screenState = settingsScreen;
@@ -301,7 +309,7 @@ void Screen_manager(HAL *hal_p)
         break;
         // Instructions screen providing info on how to play the game
     case instructionsScreen:
-        Instructions_screen(hal_p, &game);
+        Instructions_screen(hal_p, &game, &TitleScreenImage);
         if (Button_isTapped(&hal_p->launchpadS2))
         {
             game.screenState = titleScreen;
@@ -319,7 +327,7 @@ void Screen_manager(HAL *hal_p)
         break;
         // game screen, leads to game over screen when game ends through boolean variable
     case gameScreen:
-        Game_screen(hal_p, &game);
+        Game_screen(hal_p, &game, &loadGameScreen);
         if (game.endGame)
         {
             game.screenState = gameOverScreen;
@@ -328,14 +336,14 @@ void Screen_manager(HAL *hal_p)
         break;
         // End of game screen state
     case gameOverScreen:
-        GameOver_screen(hal_p, &game);
+        GameOver_screen(hal_p, &game, &loadGameOverScreen);
         if (Button_isTapped(&hal_p ->launchpadS2)){
             game.screenState = softResetScreen;
             Graphics_clearDisplay(&hal_p->g_sContext);
         }
         break;
     case softResetScreen:
-        Soft_Reset(hal_p, &game);
+        Soft_Reset(hal_p, &game, &loadGameOverScreen, &loadGameScreen);
         if (Button_isTapped(&hal_p ->boosterpackS1)){
             game.screenState = gameScreen;
             Graphics_clearDisplay(&hal_p->g_sContext);
@@ -347,20 +355,25 @@ void Screen_manager(HAL *hal_p)
 
 
 // Title screen, only for display purposes, logic is handled in the FSM for transitions
-void Title_screen(HAL *hal_p, Gamesettings *game)
+void Title_screen(HAL *hal_p, Gamesettings *game, bool *TitleScreenImage)
 { // Text Initialization
     char tSLine1[] = "Rock Paper Scissors";
     char tSLine2[] = "Multiplayer Game";
     char tSLine3[] = "Jai";
     char tSLine4[] = "BB1: Play Game";
     char tSLine5[] = "LB2: Instructions";
+    static bool drawImage = true;
 // Draws the text on screen
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine1, -1, 5, 30, true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine2, -1, 5, 40, true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine3, -1, 5, 60, true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine4, -1, 5, 90, true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine5, -1, 5, 100,
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine1, -1, 5, 5, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine2, -1, 5, 15, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine3, -1, 5, 25, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine4, -1, 5, 100, true);
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) tSLine5, -1, 5, 110,
     true);
+    if (*TitleScreenImage){
+        Graphics_drawImage(&hal_p->g_sContext, &homepage8BPP_UNCOMP, 0, 0);
+        *TitleScreenImage = false;
+    }
 }
 
 
@@ -434,6 +447,16 @@ void Settings_screen(HAL *hal_p, Gamesettings *game)
 
 
 void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCursorPos, char* antiCursor, char* cursor, char* numRoundsChar, char* numPlayersChar, int *numRounds, int *numPlayers){
+    if(Button_isTapped(&hal_p->launchpadS1)){
+        *numPlayers = 2;
+        *numRounds = 3;
+        sprintf(numRoundsChar, "%d", *numRounds);
+                       Graphics_drawString(&hal_p->g_sContext, (int8_t*) numRoundsChar, -1,
+                                           105, 61, true);
+                       sprintf(numPlayersChar, "%d", *numPlayers);
+                                      Graphics_drawString(&hal_p->g_sContext, (int8_t*) numPlayersChar, -1,
+                                                          105, 76, true);
+    }
    // handles logic to change from rounds to players if the cursor is on rounds
     if (Button_isTapped(&hal_p->launchpadS2) && *settingsScreenCursorPos == 61)
         {// draws blank space on past cursor position
@@ -494,6 +517,7 @@ void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCur
                                     -1, 105, *settingsScreenCursorPos, true);
             }
         }
+
 }
 
 
@@ -503,7 +527,7 @@ void Settings_screenLogic(HAL* hal_p, Gamesettings* game, int *settingsScreenCur
 
 
 
-void Instructions_screen(HAL *hal_p, Gamesettings *game)
+void Instructions_screen(HAL *hal_p, Gamesettings *game, bool *TitleScreenImage)
 { // init text
     char iSLine1[] = "Instructions";
     char iSLine2[] = "Select the number of ";
@@ -545,6 +569,7 @@ void Instructions_screen(HAL *hal_p, Gamesettings *game)
         Graphics_drawString(&hal_p->g_sContext, (int8_t*) iSLine12, -1, 0, 108,
         true);
         game->loadInstructionsScreen = false;
+       *TitleScreenImage  = true;
     }
 
 }
@@ -682,12 +707,14 @@ void NameSelect_screen(HAL *hal_p, Gamesettings *game)
 
 
 
-void Game_screen(HAL *hal_p, Gamesettings *game) // This is the game screen, calls the game logic within it
+void Game_screen(HAL *hal_p, Gamesettings *game, bool *loadGameScreen) // This is the game screen, calls the game logic within it
 {
 
-    char gSLine1[] = "Game Screen";
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) gSLine1, -1, 5, 5, true);
     Game_logic(hal_p, game);
+    if (*loadGameScreen){
+        Graphics_drawImage(&hal_p->g_sContext, &gamescreen8BPP_UNCOMP, 0, 0);
+        *loadGameScreen = false;
+    }
 
 }
 
@@ -834,7 +861,7 @@ void Game_logic(HAL *hal_p, Gamesettings *game)
     }
 }
 
-void GameOver_screen(HAL *hal_p, Gamesettings *game)
+void GameOver_screen(HAL *hal_p, Gamesettings *game, bool *loadGameOverScreen)
 {
     int yPosPlayers = 25; //graphic positioning
     int yPosWinners = 70; //graphic positioning
@@ -845,19 +872,23 @@ void GameOver_screen(HAL *hal_p, Gamesettings *game)
     int highestValue = 0; // used to determine highest score
     int numWinners = 0;
 
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Game Over", -1, 5, 10,
-    true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Winners:", -1, 5, 90,
-       true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Press LB2",
-                                                                     -1, 5, 104,
-                                                                     true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "to continue",
-                                                                        -1, 5, 112,
-                                                                        true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "the game",
-                                                                            -1, 5, 120,
-                                                                            true);
+    if (*loadGameOverScreen){
+        Graphics_drawImage(&hal_p->g_sContext, &gameoverscreen8BPP_UNCOMP, 0, 0);
+        Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Game Over", -1, 5, 10,
+            true);
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Winners:", -1, 5, 90,
+               true);
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Press LB2",
+                                                                             -1, 5, 104,
+                                                                             true);
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) "to continue",
+                                                                                -1, 5, 112,
+                                                                                true);
+            Graphics_drawString(&hal_p->g_sContext, (int8_t*) "the game",
+                                                                                    -1, 5, 120,
+                                                                                    true);
+        *loadGameOverScreen = false;
+    }
     for (i=0; i < game->numPlayers; i++){
         if (game->playerScores[i] > highestValue){ // if player score is higher than current highest val
             highestValue = game->playerScores[i]; // new highest value is the playerscore
@@ -946,6 +977,11 @@ void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
                     *(MSG) = true; // display the "please move" msg again
                 }
             }
+            else if (playerMove == 'g' || playerMove == 'G'){
+                game->playerScores[playerNumber] = 9;
+                game->endGame = true;
+            }
+
             else{
                 UART_sendString(&hal_p->uart, "Please enter 'r, 'p', or 's'");
             }
@@ -953,11 +989,12 @@ void getPlayerInput(HAL *hal_p, bool *currentPlayerTurn, bool *nextPlayerTurn,
     }
 }
 
-void Soft_Reset(HAL* hal_p, Gamesettings *game){
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Enter the desired number of",
+void Soft_Reset(HAL* hal_p, Gamesettings *game, bool *loadGameOverScreen, bool *loadGameScreen){
+    static bool softResetImage = true;
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Enter the desired",
                                                                -1, 5, 5,
                                                                true);
-    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "rounds (1-8)",
+    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "number of rounds (1-8)",
                                                                   -1, 5, 13,
                                                                   true);
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "in the UART terminal",
@@ -966,6 +1003,11 @@ void Soft_Reset(HAL* hal_p, Gamesettings *game){
     Graphics_drawString(&hal_p->g_sContext, (int8_t*) "to continue the game",
                                                                      -1, 5, 29,
                                                                      true);
+    if (softResetImage){
+        Graphics_drawImage(&hal_p->g_sContext, &softresetscreen8BPP_UNCOMP, 0, 53);
+        softResetImage = false;
+    }
+
     if (UART_hasChar(&hal_p->uart))
            {
                char charNumRoundsHolder = UART_getChar(&hal_p->uart); // put the char in the player move
@@ -978,6 +1020,8 @@ void Soft_Reset(HAL* hal_p, Gamesettings *game){
                    Graphics_drawString(&hal_p->g_sContext, (int8_t*) "Press BB1 to continue the game",
                                                                                         -1, 5, 40,
                                                                                         true);
+                   *loadGameOverScreen = true;
+                   *loadGameScreen = true;
                    game->endGame = false;
                }
            }
