@@ -725,7 +725,7 @@ void Game_screen(HAL *hal_p, Gamesettings *game, bool *loadGameScreen) // This i
 {
 
     Game_logic(hal_p, game);
-    if (*loadGameScreen){
+    if (*loadGameScreen){ // Draw the graphic once
         Graphics_drawImage(&hal_p->g_sContext, &gamescreen8BPP_UNCOMP, 0, 0);
         *loadGameScreen = false;
     }
@@ -778,7 +778,7 @@ void Round_logic(HAL *hal_p, Gamesettings *game, int *roundCount)
             (*roundCount)++; // go to next round and reset round logic variables
                    playersMoved = 0;
                    MSG = true;
-                   endOfRoundMSG = true;
+                   endOfRoundMSG = true; // Start at player 1 again
                    game->player1Turn = true;
                    game->player2Turn = false;
                    game->player3Turn = false;
@@ -1025,7 +1025,7 @@ void Soft_Reset(HAL* hal_p, Gamesettings *game, bool *loadGameOverScreen, bool *
     if (softResetImage){
         Graphics_drawImage(&hal_p->g_sContext, &softresetscreen8BPP_UNCOMP, 0, 53); // draws graphic
         softResetImage = false;
-    }
+    }//
 
     if (UART_hasChar(&hal_p->uart))
            {
